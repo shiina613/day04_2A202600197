@@ -1,5 +1,4 @@
 from typing import Annotated
-import os
 from typing_extensions import TypedDict
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
@@ -11,10 +10,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-github_token = os.getenv("GITHUB_TOKEN")
-if not github_token:
-    raise ValueError("Missing GITHUB_TOKEN in .env")
-
 # 1. Đọc System Prompt
 with open("system_prompt.txt", "r", encoding="utf-8") as f:
     SYSTEM_PROMPT = f.read()
@@ -25,11 +20,7 @@ class AgentState(TypedDict):
 
 # 3. Khởi tạo LLM và Tools
 tools_list = [search_flights, search_hotels, calculate_budget]
-llm = ChatOpenAI(
-    model="gpt-4o",
-    base_url="https://models.inference.ai.azure.com/",
-    api_key=github_token,
-)
+llm = ChatOpenAI(model="gpt-4o")
 llm_with_tools = llm.bind_tools(tools_list)
 
 # 4. Agent Node
