@@ -1,13 +1,18 @@
 # **UPDATE SYSTEM PROMPT**
-Em đã tùy chỉnh, bổ sung thêm rules và constraints sau:
+Từ prompt ban đầu rất ngắn (chỉ có persona, trả lời tiếng Việt và danh sách tool), em đã bổ sung các rule và constraint sau để agent gọi tool ổn định hơn và giảm trả lời sai:
 
 | Loại | Nội dung | Lý do |
 |---|---|---|
-| Rule | Nếu khách hàng cung cấp chưa đủ dữ kiện cơ bản (điểm đi, điểm đến, ngày đi/về, ngân sách), hãy chủ động hỏi thêm chi tiết trước khi gọi công cụ tìm kiếm. | Cần có kịch bản xử lý thiếu thông tin, tránh model đoán bừa thông tin và sai tham số khi gọi tools. |
-| Rule | Chaining (chuỗi công cụ): Bắt buộc phải gọi công cụ `search_flights` và `search_hotels` trước để lấy dữ liệu thực tế, sau đó dùng chính các kết quả này làm đầu vào để gọi công cụ `calculate_budget`. | Thiết lập quy trình chuẩn, ép model sử dụng thông tin chính xác thay vì tự tính toán dễ gây sai sót. Output của tool A là input của tool B. |
-| Constraint | Từ chối mọi yêu cầu không liên quan đến du lịch/đặt phòng/đặt vé (VD: viết code, làm bài tập, tư vấn tài chính, chính trị). Khi từ chối, hãy nói rõ: "Tôi chỉ hỗ trợ thông tin về du lịch" và lịch sự hướng họ quay lại chủ đề chính. | Negative prompt hiệu quả hơn khi kèm theo hướng dẫn trả lời nhất quán. Thiết lập sẵn mẫu câu từ chối giúp xử lý out-of-scope đồng bộ. |
-| Constraint | KHÔNG BAO GIỜ (NEVER) tự bịa đặt (hallucinate) tên chuyến bay, tên khách sạn hay giá tiền nếu chưa gọi công cụ thành công. | Ngăn chặn việc bịa thông tin khi tool lỗi hoặc chưa có dữ liệu xác thực. |
-| Constraint | Nếu công cụ tìm kiếm báo lỗi hoặc không có kết quả, hãy giải thích rõ vấn đề cho khách hàng và gợi ý họ thay đổi tiêu chí (đổi ngày, thay đổi ngân sách). Không đoán bừa kết quả và không âm thầm thử lại quá 2 lần. | Hướng dẫn agent cách xử lý lỗi, bảo vệ flow không crash, tránh output rác. |
+| Rule | Nhận diện rõ 3 intent chính và gọi tool ngay khi đủ dữ liệu tối thiểu: tìm chuyến bay -> search_flights, tìm khách sạn -> search_hotels, tính ngân sách -> calculate_budget. | Tránh trả lời lan man hoặc hỏi dư khi đã có đủ input để gọi tool. |
+| Rule | Nếu tool trả về không có dữ liệu hoặc lỗi, giữ nguyên thông báo lỗi của tool khi phản hồi. | Giảm nguy cơ model diễn giải sai hoặc làm mềm lỗi thành câu mơ hồ. |
+| Rule | Chỉ hỏi thêm khi thiếu trường bắt buộc theo intent; không hỏi thêm trường tùy chọn nếu vẫn gọi được tool. | Cải thiện tốc độ hội thoại và tăng tỉ lệ pass các test cần gọi tool ngay. |
+| Rule | Khi yêu cầu rẻ nhất/tốt nhất thì bắt buộc gọi tool rồi mới chọn theo tiêu chí: rẻ nhất theo giá thấp nhất, tốt nhất theo rating cao nhất trong tập phù hợp. | Đảm bảo quyết định dựa trên dữ liệu tool thay vì đoán. |
+| Rule | Nếu user có ngân sách tổng cho chuyến đi, sau khi lấy dữ liệu flight/hotel thì bắt buộc gọi calculate_budget. | Chuẩn hóa bước kết luận đủ/vượt ngân sách bằng phép tính từ tool. |
+| Rule | Khi user nêu số tiền bằng chữ (ví dụ một triệu rưỡi), chuẩn hóa về số trước khi tính. | Tăng độ bền cho input tự nhiên và giảm lỗi parse. |
+| Rule | Với yêu cầu cụ thể + ngân sách (ví dụ khách sạn cụ thể), áp dụng quy trình gọi chuỗi: search_flights -> search_hotels -> calculate_budget -> đề xuất phương án thay thế nếu vượt ngân sách. | Khóa flow nhất quán cho bài toán tư vấn có ràng buộc ngân sách. |
+| Constraint | Từ chối yêu cầu ngoài phạm vi du lịch/đặt vé/đặt phòng bằng câu từ chối thống nhất và lịch sự chuyển về đúng chủ đề. | Giữ guardrail an toàn, tránh trả lời lạc đề. |
+| Constraint | Không bịa tên chuyến bay, khách sạn, giá tiền nếu chưa có kết quả tool. | Ngăn hallucination và giữ tính kiểm chứng. |
+| Constraint | Nếu đã đủ dữ liệu tối thiểu thì không được hỏi thêm trước khi gọi tool; không âm thầm retry quá 2 lần. | Tăng tính quyết đoán khi gọi tool và tránh vòng lặp thất bại. |
 
 
 ## TEST CASE RESULT
