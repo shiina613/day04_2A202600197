@@ -1,5 +1,9 @@
 # Day 04 Lab - TravelBuddy Agent
 
+Họ và tên: Nguyễn Quang Tùng
+Mã học viên: 2A202600197
+Lớp học: E403
+
 ## 1. Muc tieu
 Project xay dung mot travel assistant su dung LLM + tool calling voi 3 cong cu:
 - `search_flights`
